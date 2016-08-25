@@ -1,0 +1,20 @@
+<ion-view view-title="Movies">
+    <!-- do you want padding? -->
+    <ion-content scroll="false">
+        <div ng-if="cards">
+            <td-cards>
+                <td-card ng-repeat="card in cards" on-destroy="cardDestroyed($index)" on-swipe-left="setOpinion(card, 'disliked')" on-swipe-right="setOpinion(card, 'liked')">
+                    <div class="image">
+                        <div class="no-text"><i class="icon ion-thumbsdown"></i></div>
+                        <div class="yes-text"><i class="icon ion-thumbsup"></i></div>
+                        <div class="discard" ng-click="onClickTransitionOut(card)">NOT SEEN</div>
+                        <img ng-src="{{imageUrl + card.poster_path}}">
+                    </div>
+                </td-card>
+                <td-card id="end-card" drag="false">
+                    <i class="icon ion-load-b disable-user-behavior"></i>
+                </td-card>
+            </td-cards>
+        </div>
+    </ion-content>
+</ion-view>
