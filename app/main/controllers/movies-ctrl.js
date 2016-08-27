@@ -1,17 +1,12 @@
 'use strict';
 angular.module('main')
-    .controller('MoviesCtrl', function($scope, movieDatabase, $firebaseAuth, $firebaseObject, $firebaseArray, $q, $timeout, $ionicLoading) {
-
-        var auth = $firebaseAuth();
+    .controller('MoviesCtrl', function($scope, movieDatabase, Auth, $firebaseObject, $firebaseArray, $q, $timeout, $ionicLoading) {
         var user;
         var movieReviews;
 
+        var uid = Auth.$getAuth().uid;
 
-        auth.$signInAnonymously()
-            .then(function(result) {
-                user = result;
-                return movieDatabase.get('configuration')
-            })
+        movieDatabase.get('configuration')
             .then(function(result) {
                 $scope.imageUrl = result.images.base_url + 'w300';
 
@@ -29,7 +24,7 @@ angular.module('main')
 
         function getCardsToAdd(n) {
             return _.chain(movieReviews)
-                .reject(user.uid)
+                .reject(uid)
                 // .reject(function(review) {
                 //     return _.some($scope.cards || tempArr, { id: Number(review.$id) })
                 // })
@@ -69,8 +64,8 @@ angular.module('main')
         });
 
         $scope.setOpinion = function(card, opinion) {
-            var movieReviewRef = firebase.database().ref('movie-reviews/' + card.id + '/' + user.uid)
-            var userReviewRef = firebase.database().ref('user-reviews/' + user.uid + '/' + card.id)
+            var movieReviewRef = firebase.database().ref('movie-reviews/' + card.id + '/' + uid)
+            var userReviewRef = firebase.database().ref('user-reviews/' + uid + '/' + card.id)
 
             movieReviewRef.set(opinion)
             userReviewRef.set(opinion)

@@ -1,0 +1,24 @@
+<ion-view view-title="List">
+    <ion-content>
+        <!-- content goes here -->
+        <!-- <div class="list">
+            <div class="item item-divider">
+                Genres
+            </div>
+            <div class="item">
+                Most Liked
+                <span class="item-note">{{vm.genre.mostLiked}}</span>
+            </div>
+            <div class="item">
+                Most Disliked
+                <span class="item-note">{{vm.genre.mostDisliked}}</span>
+            </div>
+            <div class="item">
+                Most Unseen
+                <span class="item-note">{{vm.genre.mostUnseen}}</span>
+            </div>
+        </div> -->
+        <div google-chart chart="vm.myChartObject" style="height:300px; width:100%;"></div>
+        <div google-chart chart="vm.favoriteGenres" style="height:300px; width:100%;"></div>
+    </ion-content>
+</ion-view>
