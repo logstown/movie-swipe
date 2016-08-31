@@ -1,24 +1,45 @@
 <ion-view view-title="List">
     <ion-content>
         <!-- content goes here -->
-        <!-- <div class="list">
+        <div class="list">
             <div class="item item-divider">
-                Genres
+                Breakdown
             </div>
             <div class="item">
-                Most Liked
-                <span class="item-note">{{vm.genre.mostLiked}}</span>
+                <div google-chart chart="vm.myChartObject" style="width:100%;"></div>
+            </div>
+            <div class="item item-divider">
+                By Genre
             </div>
             <div class="item">
-                Most Disliked
-                <span class="item-note">{{vm.genre.mostDisliked}}</span>
+                Favorite
+                <span class="item-note">{{vm.genreStats.mostLiked}}</span>
             </div>
             <div class="item">
-                Most Unseen
-                <span class="item-note">{{vm.genre.mostUnseen}}</span>
+                Least Favorite
+                <span class="item-note">{{vm.genreStats.mostDisliked}}</span>
             </div>
-        </div> -->
-        <div google-chart chart="vm.myChartObject" style="height:300px; width:100%;"></div>
-        <div google-chart chart="vm.favoriteGenres" style="height:300px; width:100%;"></div>
+            <a class="item item-icon-right item-remove-animate" ng-click="vm.goToGenres()">
+                More...
+                <i class="icon ion-chevron-right icon-accessory"></i>
+            </a>
+            <div class="item item-divider">
+                By Year
+            </div>
+            <div class="item">
+                Favorite
+                <span class="item-note">{{vm.yearStats.mostLiked}}</span>
+                <!-- <div google-chart chart="vm.yearCounts" style="height:1500px; width:100%;"></div> -->
+            </div>
+            <div class="item">
+                Least Favorite
+                <span class="item-note">{{vm.yearStats.mostDisliked}}</span>
+                <!-- <div google-chart chart="vm.yearCounts" style="height:1500px; width:100%;"></div> -->
+            </div>
+            <a class="item item-icon-right item-remove-animate" ng-click="vm.goToYears()">
+                More...
+                <i class="icon ion-chevron-right icon-accessory"></i>
+            </a>
+        </div>
     </ion-content>
 </ion-view>

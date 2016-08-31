@@ -84,5 +84,15 @@ angular.module('main', [
                         controller: 'StatsCtrl as vm'
                     }
                 }
+            })
+            .state('main.genreStats', {
+                url: '/stats/genre',
+                params: { graph: null },
+                views: {
+                    'tab-stats': {
+                        templateUrl: 'main/templates/genre-stats.html',
+                        controller: 'GenreStatsCtrl as vm'
+                    }
+                }
             });
     });
