@@ -30,185 +30,187 @@ angular.module('main')
             }]
         };
 
-        movieDatabase.get('genre/movie/list')
-            .then(function(genres) {
+        movieDatabase.get('configuration')
+            .then(function(result) {
+                $scope.imageUrl = result.images.base_url + result.images.profile_sizes[1];
 
-                var yearCounts = {};
-                var genreCounts = {};
-                var directorCounts = {};
-                var actorCounts = {};
-                var initialDataLoaded = false;
+                return movieDatabase.get('genre/movie/list')
+            })
 
-                var userReviewRef = firebase.database().ref('user-reviews/' + Auth.$getAuth().uid);
+        .then(function(genres) {
 
-                userReviewRef.on('child_added', function(review) {
-                    var opinion = review.val();
-                    var movieId = review.key;
+            var yearCounts = {};
+            var genreCounts = {};
+            var directorCounts = {};
+            var actorCounts = {};
+            var initialDataLoaded = false;
 
-                    switch (opinion) {
-                        case 'liked':
-                            $scope.deal.myChartObject.data.rows[0].c[1].v++;
-                            break;
-                        case 'disliked':
-                            $scope.deal.myChartObject.data.rows[1].c[1].v++;
-                            break;
-                        default:
-                            $scope.deal.myChartObject.data.rows[2].c[1].v++;
-                    }
+            var userReviewRef = firebase.database().ref('user-reviews/' + Auth.$getAuth().uid);
 
-                    if (opinion === 'unseen') {
-                        return;
-                    }
+            userReviewRef.on('child_added', function(review) {
+                var opinion = review.val();
+                var movieId = review.key;
 
-                    var movieRef = firebase.database().ref('movies/' + movieId);
+                switch (opinion) {
+                    case 'liked':
+                        $scope.deal.myChartObject.data.rows[0].c[1].v++;
+                        break;
+                    case 'disliked':
+                        $scope.deal.myChartObject.data.rows[1].c[1].v++;
+                        break;
+                    default:
+                        $scope.deal.myChartObject.data.rows[2].c[1].v++;
+                }
 
-                    movieRef.once('value')
-                        .then(function(movieSnapshot) {
-                            var movie = movieSnapshot.val();
+                if (opinion === 'unseen') {
+                    return;
+                }
 
-                            var releasedYear = new Date(movie.release_date).getFullYear();
+                var movieRef = firebase.database().ref('movies/' + movieId);
 
-                            if (!yearCounts[releasedYear]) {
-                                yearCounts[releasedYear] = {
+                movieRef.once('value')
+                    .then(function(movieSnapshot) {
+                        var movie = movieSnapshot.val();
+
+                        var releasedYear = new Date(movie.release_date).getFullYear();
+
+                        if (!yearCounts[releasedYear]) {
+                            yearCounts[releasedYear] = {
+                                liked: 0,
+                                disliked: 0
+                            };
+                        }
+
+                        yearCounts[releasedYear][opinion]++;
+
+                        angular.forEach(movie.genre_ids, function(id) {
+                            var genre = _.find(genres.genres, { id: Number(id) }).name;
+
+                            if (!genreCounts[genre]) {
+                                genreCounts[genre] = {
                                     liked: 0,
                                     disliked: 0
-                                };
-                            }
-
-                            yearCounts[releasedYear][opinion]++;
-
-                            angular.forEach(movie.genre_ids, function(id) {
-                                var genre = _.find(genres.genres, { id: Number(id) }).name;
-
-                                if (!genreCounts[genre]) {
-                                    genreCounts[genre] = {
-                                        liked: 0,
-                                        disliked: 0
-                                    }
                                 }
-
-                                genreCounts[genre][opinion]++;
-                            });
-
-                            console.log(initialDataLoaded)
-
-                            if (initialDataLoaded) {
-                                $timeout(function() {
-
-                                    $scope.yearStats = getStats(yearCounts)
-                                    $scope.genreStats = getStats(genreCounts);
-                                })
                             }
 
+                            genreCounts[genre][opinion]++;
                         });
 
-                });
+                        if (initialDataLoaded) {
+                            $timeout(function() {
 
-                userReviewRef.once('value', function(snapshot) {
-                    initialDataLoaded = true;
-
-                    console.log(snapshot)
-
-                    if (!snapshot.val()) {
-                        $scope.yearStats = {
-                            mostLiked: "Not Enough Data",
-                            mostDisliked: "Not Enough Data"
-                        };
-
-                        $scope.genreStats = {
-                            mostLiked: "Not Enough Data",
-                            mostDisliked: "Not Enough Data"
+                                $scope.yearStats = getStats(yearCounts)
+                                $scope.genreStats = getStats(genreCounts);
+                            })
                         }
+
+                    });
+
+            });
+
+            userReviewRef.once('value', function(snapshot) {
+                initialDataLoaded = true;
+
+                if (!snapshot.val()) {
+                    $scope.yearStats = {
+                        mostLiked: "Not Enough Data",
+                        mostDisliked: "Not Enough Data"
+                    };
+
+                    $scope.genreStats = {
+                        mostLiked: "Not Enough Data",
+                        mostDisliked: "Not Enough Data"
                     }
-                });
+                }
+            });
 
-                var actorReviewRef = firebase.database().ref('people-reviews/' + Auth.$getAuth().uid + '/actors');
-                var directorReviewRef = firebase.database().ref('people-reviews/' + Auth.$getAuth().uid + '/directors');
+            var actorReviewRef = firebase.database().ref('people-reviews/' + Auth.$getAuth().uid + '/actors');
+            var directorReviewRef = firebase.database().ref('people-reviews/' + Auth.$getAuth().uid + '/directors');
 
-                actorReviewRef.once('value', function(actorReviews) {
-                    actorCounts = actorReviews.val()
-                    var ids = getStats(actorCounts);
+            actorReviewRef.once('value', function(actorReviews) {
+                actorCounts = actorReviews.val()
+                var ids = getStats(actorCounts);
 
-                    $scope.actorStats = {};
+                $scope.actorStats = {};
 
-                    if (ids.mostLiked === 'Not Enough Data') {
-                        $scope.actorStats = ids;
-                    } else {
-                        movieDatabase.get('person/' + ids.mostLiked)
-                            .then(function(result) {
-                                $scope.actorStats.mostLiked = result.name
-                            });
-
-                        movieDatabase.get('person/' + ids.mostDisliked)
-                            .then(function(result) {
-                                $scope.actorStats.mostDisliked = result.name
-                            });
-                    }
-
-                })
-
-                directorReviewRef.once('value', function(directorReviews) {
-                    directorCounts = directorReviews.val()
-                    var ids = getStats(directorCounts);
-
-                    $scope.directorStats = {};
-
-                    if (ids.mostLiked === 'Not Enough Data') {
-                        $scope.directorStats = ids;
-                    } else {
-                        movieDatabase.get('person/' + ids.mostLiked)
-                            .then(function(result) {
-                                $scope.directorStats.mostLiked = result.name
-                            });
-
-                        movieDatabase.get('person/' + ids.mostDisliked)
-                            .then(function(result) {
-                                $scope.directorStats.mostDisliked = result.name
-                            });
-                    }
-
-                })
-
-                actorReviewRef.on('child_changed', function(data) {
-                    actorCounts[data.key] = data.val();
-
-                    var ids = getStats(actorCounts);
-
+                if (ids.mostLiked === 'Not Enough Data') {
+                    $scope.actorStats = ids;
+                } else {
                     movieDatabase.get('person/' + ids.mostLiked)
                         .then(function(result) {
-                            $scope.actorStats.mostLiked = result.name
+                            $scope.actorStats.mostLiked = result;
                         });
 
                     movieDatabase.get('person/' + ids.mostDisliked)
                         .then(function(result) {
-                            $scope.actorStats.mostDisliked = result.name
+                            $scope.actorStats.mostDisliked = result;
                         });
-                })
-
-                directorReviewRef.on('child_changed', function(data) {
-                    directorCounts[data.key] = data.val();
-
-                    var ids = getStats(directorCounts);
-
-                    movieDatabase.get('person/' + ids.mostLiked)
-                        .then(function(result) {
-                            $scope.directorStats.mostLiked = result.name
-                        });
-
-                    movieDatabase.get('person/' + ids.mostDisliked)
-                        .then(function(result) {
-                            $scope.directorStats.mostDisliked = result.name
-                        });
-                })
-
-                $scope.goToGenres = function() {
-                    $state.go('main.genreStats', { graph: genreCounts })
                 }
 
-                $scope.goToYears = function() {
-                    $state.go('main.yearStats', { graph: yearCounts })
-                }
             })
+
+            directorReviewRef.once('value', function(directorReviews) {
+                directorCounts = directorReviews.val()
+                var ids = getStats(directorCounts);
+
+                $scope.directorStats = {};
+
+                if (ids.mostLiked === 'Not Enough Data') {
+                    $scope.directorStats = ids;
+                } else {
+                    movieDatabase.get('person/' + ids.mostLiked)
+                        .then(function(result) {
+                            $scope.directorStats.mostLiked = result;
+                        });
+
+                    movieDatabase.get('person/' + ids.mostDisliked)
+                        .then(function(result) {
+                            $scope.directorStats.mostDisliked = result;
+                        });
+                }
+
+            })
+
+            actorReviewRef.on('child_changed', function(data) {
+                actorCounts[data.key] = data.val();
+
+                var ids = getStats(actorCounts);
+
+                movieDatabase.get('person/' + ids.mostLiked)
+                    .then(function(result) {
+                        $scope.actorStats.mostLiked = result;
+                    });
+
+                movieDatabase.get('person/' + ids.mostDisliked)
+                    .then(function(result) {
+                        $scope.actorStats.mostDisliked = result;
+                    });
+            })
+
+            directorReviewRef.on('child_changed', function(data) {
+                directorCounts[data.key] = data.val();
+
+                var ids = getStats(directorCounts);
+
+                movieDatabase.get('person/' + ids.mostLiked)
+                    .then(function(result) {
+                        $scope.directorStats.mostLiked = result;
+                    });
+
+                movieDatabase.get('person/' + ids.mostDisliked)
+                    .then(function(result) {
+                        $scope.directorStats.mostDisliked = result;
+                    });
+            })
+
+            $scope.goToGenres = function() {
+                $state.go('main.genreStats', { graph: genreCounts })
+            }
+
+            $scope.goToYears = function() {
+                $state.go('main.yearStats', { graph: yearCounts })
+            }
+        })
 
         function getStats(counts) {
             var percentages = _.chain(counts)

@@ -1,48 +1,16 @@
 <ion-view view-title="Your Movie Stats">
-    <ion-content>
-        <!-- content goes here -->
+    <ion-content class="padding">
+        <div google-chart chart="deal.myChartObject" style="width:100%;"></div>
         <div class="list">
-            <div class="item item-divider">
-                Opinion Breakdown
-            </div>
-            <div class="item">
-                <div google-chart chart="deal.myChartObject" style="width:100%;"></div>
-            </div>
-            <div class="item item-divider">
-                Actor
-            </div>
-            <div class="item item-icon-left">
-                <i class="icon ion-thumbsup"></i> Favorite
-                <span class="item-note">{{actorStats.mostLiked}}</span>
-            </div>
-            <div class="item item-icon-left">
-                <i class="icon ion-thumbsdown"></i> Least Favorite
-                <span class="item-note">{{actorStats.mostDisliked}}</span>
-            </div>
-            <!-- <a href class="item item-icon-left item-icon-right item-remove-animate" ng-click="goToGenres()">
-                <i class="icon ion-stats-bars"></i> Graph
-                <i class="icon ion-chevron-right icon-accessory"></i>
-            </a> -->
-            <div class="item item-divider">
-                Director
-            </div>
-            <div class="item item-icon-left">
-                <i class="icon ion-thumbsup"></i> Favorite
-                <span class="item-note">{{directorStats.mostLiked}}</span>
-            </div>
-            <div class="item item-icon-left">
-                <i class="icon ion-thumbsdown"></i> Least Favorite
-                <span class="item-note">{{directorStats.mostDisliked}}</span>
-            </div>
             <div class="item item-divider">
                 Genre
             </div>
             <div class="item item-icon-left">
-                <i class="icon ion-thumbsup"></i> Favorite
+                <i class="icon ion-thumbsup positive"></i> Most Liked
                 <span class="item-note">{{genreStats.mostLiked}}</span>
             </div>
             <div class="item item-icon-left">
-                <i class="icon ion-thumbsdown"></i> Least Favorite
+                <i class="icon ion-thumbsdown assertive"></i> Most Disliked
                 <span class="item-note">{{genreStats.mostDisliked}}</span>
             </div>
             <a href class="item item-icon-left item-icon-right item-remove-animate" ng-click="goToGenres()">
@@ -53,17 +21,49 @@
                 Year
             </div>
             <div class="item item-icon-left">
-                <i class="icon ion-thumbsup"></i> Favorite
+                <i class="icon ion-thumbsup positive"></i> Most Liked
                 <span class="item-note">{{yearStats.mostLiked}}</span>
             </div>
             <div class="item item-icon-left">
-                <i class="icon ion-thumbsdown"></i> Least Favorite
+                <i class="icon ion-thumbsdown assertive"></i> Most Disliked
                 <span class="item-note">{{yearStats.mostDisliked}}</span>
             </div>
             <a href class="item item-icon-left item-icon-right item-remove-animate" ng-click="goToYears()">
                 <i class="icon ion-stats-bars"></i> Graph
                 <i class="icon ion-chevron-right icon-accessory"></i>
             </a>
+        </div>
+        <div class="card">
+            <div class="item item-divider">Actor</div>
+            <div class="row" style="text-align: center;" ng-if="actorStats">
+                <div class="col">
+                    <h1><i class="icon ion-thumbsup positive"></i></h1>
+                    <img ng-src="{{imageUrl + actorStats.mostLiked.profile_path}}" style="width: 100%;">
+                    <div>{{actorStats.mostLiked.name}}</div>
+                </div>
+                <div class="col">
+                    <h1><i class="icon ion-thumbsdown assertive"></i></h1>
+                    <img ng-src="{{imageUrl + actorStats.mostDisliked.profile_path}}" style="width: 100%;">
+                    <div>{{actorStats.mostDisliked.name}}</div>
+                </div>
+            </div>
+            <ion-spinner ng-hide="actorStats" class="spinner-energized"></ion-spinner>
+        </div>
+        <div class="card">
+            <div class="item item-divider">Director</div>
+            <div class="row" style="text-align: center;" ng-if="directorStats">
+                <div class="col">
+                    <h1><i class="icon ion-thumbsup positive"></i></h1>
+                    <img ng-src="{{imageUrl + directorStats.mostLiked.profile_path}}" style="width: 100%;">
+                    <div>{{directorStats.mostLiked.name}}</div>
+                </div>
+                <div class="col">
+                    <h1><i class="icon ion-thumbsdown assertive"></i></h1>
+                    <img ng-src="{{imageUrl + directorStats.mostDisliked.profile_path}}" style="width: 100%;">
+                    <div>{{directorStats.mostDisliked.name}}</div>
+                </div>
+            </div>
+            <ion-spinner ng-hide="directorStats" class="spinner-energized"></ion-spinner>
         </div>
     </ion-content>
 </ion-view>

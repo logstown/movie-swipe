@@ -52,10 +52,10 @@ angular.module('main')
         function getCardsToAdd(n) {
             return _.chain(movieReviews)
                 .reject(uid)
+                .sampleSize(n)
                 .sortBy(function(review) {
                     return _.keys(review).length;
                 })
-                .take(n)
                 .map(function(review) {
                     return $q.all([movieDatabase.get('movie/' + review.$id), movieDatabase.get('movie/' + review.$id + '/credits')]);
                 })
