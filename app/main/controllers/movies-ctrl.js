@@ -33,7 +33,7 @@ angular.module('main')
         function loadCardBatch() {
             $ionicLoading.show({ template: 'Loading...' })
                 .then(function() {
-                    return $q.all(getCardsToAdd(20));
+                    return $q.all(getCardsToAdd(10));
                 })
                 .then(function(cards) {
                     $ionicLoading.hide()
@@ -57,8 +57,7 @@ angular.module('main')
                 })
                 .take(n)
                 .map(function(review) {
-                    var ref = firebase.database().ref('movies/' + review.$id);
-                    return $q.all([$firebaseObject(ref).$loaded(), movieDatabase.get('movie/' + review.$id + '/credits')]);
+                    return $q.all([movieDatabase.get('movie/' + review.$id), movieDatabase.get('movie/' + review.$id + '/credits')]);
                 })
                 .value();
         }
@@ -83,7 +82,6 @@ angular.module('main')
 
             movieReviewRef.set(opinion)
             userReviewRef.set(opinion)
-            console.log(opinion)
 
             if (opinion !== 'unseen') {
                 angular.forEach(card.people.cast, function(person) {
