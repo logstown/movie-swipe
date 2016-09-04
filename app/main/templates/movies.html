@@ -1,4 +1,4 @@
-<ion-view view-title="Movies">
+<ion-view view-title="{{cards[0].movie.title}}">
     <!-- do you want padding? -->
     <ion-content scroll="false">
         <div ng-if="cards">
@@ -7,8 +7,8 @@
                     <div class="image">
                         <div class="no-text"><i class="icon ion-thumbsdown"></i></div>
                         <div class="yes-text"><i class="icon ion-thumbsup"></i></div>
-                        <div class="discard" ng-click="onClickTransitionOut(card)">NOT SEEN</div>
-                        <img ng-src="{{imageUrl + card.poster_path}}">
+                        <div class="discard" ng-click="onClickTransitionOut(card)">UNSURE</div>
+                        <img ng-src="{{imageUrl + card.movie.poster_path}}">
                     </div>
                 </td-card>
                 <td-card id="end-card" drag="false">

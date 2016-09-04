@@ -81,7 +81,7 @@ angular.module('main', [
                 views: {
                     'tab-stats': {
                         templateUrl: 'main/templates/stats.html',
-                        controller: 'StatsCtrl as vm'
+                        controller: 'StatsCtrl'
                     }
                 }
             })
@@ -92,6 +92,16 @@ angular.module('main', [
                     'tab-stats': {
                         templateUrl: 'main/templates/genre-stats.html',
                         controller: 'GenreStatsCtrl as vm'
+                    }
+                }
+            })
+            .state('main.yearStats', {
+                url: '/stats/year',
+                params: { graph: null },
+                views: {
+                    'tab-stats': {
+                        templateUrl: 'main/templates/year-stats.html',
+                        controller: 'YearStatsCtrl as vm'
                     }
                 }
             });

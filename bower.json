@@ -11,7 +11,8 @@
     "ionic-tinder-cards-2": "^1.0.4",
     "angularfire": "^2.0.1",
     "lodash": "^4.15.0",
-    "angular-google-chart": "0.1.0"
+    "angular-google-chart": "0.1.0",
+    "ngOpenFB": "*"
   },
   "devDependencies": {
     "angular-mocks": "~1.5.0"

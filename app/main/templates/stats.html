@@ -1,43 +1,67 @@
-<ion-view view-title="List">
+<ion-view view-title="Your Movie Stats">
     <ion-content>
         <!-- content goes here -->
         <div class="list">
             <div class="item item-divider">
-                Breakdown
+                Opinion Breakdown
             </div>
             <div class="item">
-                <div google-chart chart="vm.myChartObject" style="width:100%;"></div>
+                <div google-chart chart="deal.myChartObject" style="width:100%;"></div>
             </div>
             <div class="item item-divider">
-                By Genre
+                Actor
             </div>
-            <div class="item">
-                Favorite
-                <span class="item-note">{{vm.genreStats.mostLiked}}</span>
+            <div class="item item-icon-left">
+                <i class="icon ion-thumbsup"></i> Favorite
+                <span class="item-note">{{actorStats.mostLiked}}</span>
             </div>
-            <div class="item">
-                Least Favorite
-                <span class="item-note">{{vm.genreStats.mostDisliked}}</span>
+            <div class="item item-icon-left">
+                <i class="icon ion-thumbsdown"></i> Least Favorite
+                <span class="item-note">{{actorStats.mostDisliked}}</span>
             </div>
-            <a class="item item-icon-right item-remove-animate" ng-click="vm.goToGenres()">
-                More...
+            <!-- <a href class="item item-icon-left item-icon-right item-remove-animate" ng-click="goToGenres()">
+                <i class="icon ion-stats-bars"></i> Graph
+                <i class="icon ion-chevron-right icon-accessory"></i>
+            </a> -->
+            <div class="item item-divider">
+                Director
+            </div>
+            <div class="item item-icon-left">
+                <i class="icon ion-thumbsup"></i> Favorite
+                <span class="item-note">{{directorStats.mostLiked}}</span>
+            </div>
+            <div class="item item-icon-left">
+                <i class="icon ion-thumbsdown"></i> Least Favorite
+                <span class="item-note">{{directorStats.mostDisliked}}</span>
+            </div>
+            <div class="item item-divider">
+                Genre
+            </div>
+            <div class="item item-icon-left">
+                <i class="icon ion-thumbsup"></i> Favorite
+                <span class="item-note">{{genreStats.mostLiked}}</span>
+            </div>
+            <div class="item item-icon-left">
+                <i class="icon ion-thumbsdown"></i> Least Favorite
+                <span class="item-note">{{genreStats.mostDisliked}}</span>
+            </div>
+            <a href class="item item-icon-left item-icon-right item-remove-animate" ng-click="goToGenres()">
+                <i class="icon ion-stats-bars"></i> Graph
                 <i class="icon ion-chevron-right icon-accessory"></i>
             </a>
             <div class="item item-divider">
-                By Year
+                Year
             </div>
-            <div class="item">
-                Favorite
-                <span class="item-note">{{vm.yearStats.mostLiked}}</span>
-                <!-- <div google-chart chart="vm.yearCounts" style="height:1500px; width:100%;"></div> -->
+            <div class="item item-icon-left">
+                <i class="icon ion-thumbsup"></i> Favorite
+                <span class="item-note">{{yearStats.mostLiked}}</span>
             </div>
-            <div class="item">
-                Least Favorite
-                <span class="item-note">{{vm.yearStats.mostDisliked}}</span>
-                <!-- <div google-chart chart="vm.yearCounts" style="height:1500px; width:100%;"></div> -->
+            <div class="item item-icon-left">
+                <i class="icon ion-thumbsdown"></i> Least Favorite
+                <span class="item-note">{{yearStats.mostDisliked}}</span>
             </div>
-            <a class="item item-icon-right item-remove-animate" ng-click="vm.goToYears()">
-                More...
+            <a href class="item item-icon-left item-icon-right item-remove-animate" ng-click="goToYears()">
+                <i class="icon ion-stats-bars"></i> Graph
                 <i class="icon ion-chevron-right icon-accessory"></i>
             </a>
         </div>

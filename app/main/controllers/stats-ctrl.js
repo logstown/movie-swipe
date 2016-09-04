@@ -1,302 +1,233 @@
 'use strict';
 angular.module('main')
-    .controller('StatsCtrl', function(Auth, $state, $firebaseObject, $q, movieDatabase, $ionicLoading) {
-        var vm = this;
+    .controller('StatsCtrl', function(Auth, $state, movieDatabase, $scope, $timeout, $firebaseObject) {
 
-        var ref = firebase.database().ref('user-reviews/' + Auth.$getAuth().uid);
-        var userReviews = $firebaseObject(ref)
+        $scope.deal = {};
+        $scope.deal.myChartObject = {};
 
+        $scope.deal.myChartObject.type = "PieChart";
 
+        $scope.deal.myChartObject.data = {
+            "cols": [
+                { id: "t", label: "Opinion", type: "string" },
+                { id: "s", label: "Count", type: "number" }
+            ],
+            "rows": [{
+                c: [
+                    { v: "Liked" },
+                    { v: 0 },
+                ]
+            }, {
+                c: [
+                    { v: "Disliked" },
+                    { v: 0 }
+                ]
+            }, {
+                c: [
+                    { v: "Unseen" },
+                    { v: 0 },
+                ]
+            }]
+        };
 
-        $ionicLoading.show({ template: 'Calculating...' })
-            .then(function() {
-                return userReviews.$loaded()
-            })
-            .then(function() {
-                console.log('getting em')
-                var moviePromises = _.chain(userReviews)
-                    .omitBy(function(opinion, movieId) {
-                        movieId = Number(movieId)
-                        return isNaN(movieId)
-                    })
-                    .map(function(opinion, movieId) {
-                        var ref = firebase.database().ref('movies/' + movieId)
-                        return $firebaseObject(ref).$loaded()
-                    })
-                    .value();
+        movieDatabase.get('genre/movie/list')
+            .then(function(genres) {
 
-                return $q.all(moviePromises)
-            })
-            .then(function(movies) {
-                console.log('got em')
-                var sortedMovies = _.groupBy(movies, function(movie) {
-                    return userReviews[movie.id]
+                var yearCounts = {};
+                var genreCounts = {};
+                var directorCounts = {};
+                var actorCounts = {};
+                var initialDataLoaded = false;
+
+                var userReviewRef = firebase.database().ref('user-reviews/' + Auth.$getAuth().uid);
+
+                userReviewRef.on('child_added', function(review) {
+                    var opinion = review.val();
+                    var movieId = review.key;
+
+                    switch (opinion) {
+                        case 'liked':
+                            $scope.deal.myChartObject.data.rows[0].c[1].v++;
+                            break;
+                        case 'disliked':
+                            $scope.deal.myChartObject.data.rows[1].c[1].v++;
+                            break;
+                        default:
+                            $scope.deal.myChartObject.data.rows[2].c[1].v++;
+                    }
+
+                    if (opinion === 'unseen') {
+                        return;
+                    }
+
+                    var movieRef = firebase.database().ref('movies/' + movieId);
+
+                    movieRef.once('value')
+                        .then(function(movieSnapshot) {
+                            var movie = movieSnapshot.val();
+
+                            var releasedYear = new Date(movie.release_date).getFullYear();
+
+                            if (!yearCounts[releasedYear]) {
+                                yearCounts[releasedYear] = {
+                                    liked: 0,
+                                    disliked: 0
+                                };
+                            }
+
+                            yearCounts[releasedYear][opinion]++;
+
+                            angular.forEach(movie.genre_ids, function(id) {
+                                var genre = _.find(genres.genres, { id: Number(id) }).name;
+
+                                if (!genreCounts[genre]) {
+                                    genreCounts[genre] = {
+                                        liked: 0,
+                                        disliked: 0
+                                    }
+                                }
+
+                                genreCounts[genre][opinion]++;
+                            });
+
+                            if (initialDataLoaded) {
+                                $timeout(function() {
+
+                                    $scope.yearStats = getStats(yearCounts)
+                                    $scope.genreStats = getStats(genreCounts);
+                                })
+                            }
+
+                        });
+
+                });
+
+                userReviewRef.once('value', function(snapshot) {
+                    initialDataLoaded = true;
+                });
+
+                var actorReviewRef = firebase.database().ref('people-reviews/' + Auth.$getAuth().uid + '/actors');
+                var directorReviewRef = firebase.database().ref('people-reviews/' + Auth.$getAuth().uid + '/directors');
+
+                actorReviewRef.once('value', function(actorReviews) {
+                    actorCounts = actorReviews.val()
+                    var ids = getStats(actorCounts);
+
+                    $scope.actorStats = {};
+
+                    if (ids.mostLiked === 'Not Enough Data') {
+                        $scope.actorStats = ids;
+                    } else {
+                        movieDatabase.get('person/' + ids.mostLiked)
+                            .then(function(result) {
+                                $scope.actorStats.mostLiked = result.name
+                            });
+
+                        movieDatabase.get('person/' + ids.mostDisliked)
+                            .then(function(result) {
+                                $scope.actorStats.mostDisliked = result.name
+                            });
+                    }
+
                 })
 
-                var likedYearCounts = _.chain(sortedMovies.liked)
-                    .groupBy(function(movie) {
-                        var d = new Date(movie.release_date);
-                        return d.getFullYear();
-                    })
-                    .mapValues(function(movieArray) {
-                        return {
-                            liked: movieArray.length
-                        };
-                    })
-                    .value()
+                directorReviewRef.once('value', function(directorReviews) {
+                    directorCounts = directorReviews.val()
+                    var ids = getStats(directorCounts);
 
-                var dislikedYearCounts = _.chain(sortedMovies.disliked)
-                    .groupBy(function(movie) {
-                        var d = new Date(movie.release_date);
-                        return d.getFullYear();
-                    })
-                    .mapValues(function(movieArray) {
-                        return {
-                            disliked: movieArray.length
-                        };
-                    })
-                    .value()
+                    $scope.directorStats = {};
 
-                var mergedCounts = _.chain(likedYearCounts)
-                    .mergeWith(dislikedYearCounts, function(likedObj, dislikedObj) {
-                        var likedCount = likedObj ? likedObj.liked || 0 : 0;
-                        var dislikedCount = dislikedObj ? dislikedObj.disliked || 0 : 0;
+                    if (ids.mostLiked === 'Not Enough Data') {
+                        $scope.directorStats = ids;
+                    } else {
+                        movieDatabase.get('person/' + ids.mostLiked)
+                            .then(function(result) {
+                                $scope.directorStats.mostLiked = result.name
+                            });
 
-                        // return likedCount - dislikedCount;
-                        // return likedCount === 0 ? 0 : dislikedCount / likedCount * 100;
-                        return {
-                            liked: likedCount,
-                            disliked: dislikedCount
-                        }
-                    })
-                    .mapValues(function(obj) {
-                        return {
-                            liked: obj.liked || 0,
-                            disliked: obj.disliked || 0
-                        }
-                    })
-                    .value();
+                        movieDatabase.get('person/' + ids.mostDisliked)
+                            .then(function(result) {
+                                $scope.directorStats.mostDisliked = result.name
+                            });
+                    }
 
-                var percentages = _.chain(mergedCounts)
-                    .map(function(obj, year) {
-                        return {
-                            year: year,
-                            percent: obj.liked / (obj.liked + obj.disliked),
-                            total: obj.liked + obj.disliked
-                        }
-                    })
-                    .sortBy(['percent', 'total'])
-                    .value();
+                })
 
-                console.log(percentages)
+                actorReviewRef.on('child_changed', function(data) {
+                    actorCounts[data.key] = data.val();
 
-                vm.yearStats = {
-                    mostLiked: _.last(percentages).year,
-                    mostDisliked: _.chain(percentages)
-                        .filter({ percent: percentages[0].percent })
-                        .maxBy('total')
-                        .value()
-                        .year
+                    var ids = getStats(actorCounts);
+
+                    movieDatabase.get('person/' + ids.mostLiked)
+                        .then(function(result) {
+                            $scope.actorStats.mostLiked = result.name
+                        });
+
+                    movieDatabase.get('person/' + ids.mostDisliked)
+                        .then(function(result) {
+                            $scope.actorStats.mostDisliked = result.name
+                        });
+                })
+
+                directorReviewRef.on('child_changed', function(data) {
+                    directorCounts[data.key] = data.val();
+
+                    var ids = getStats(directorCounts);
+
+                    movieDatabase.get('person/' + ids.mostLiked)
+                        .then(function(result) {
+                            $scope.directorStats.mostLiked = result.name
+                        });
+
+                    movieDatabase.get('person/' + ids.mostDisliked)
+                        .then(function(result) {
+                            $scope.directorStats.mostDisliked = result.name
+                        });
+                })
+
+                $scope.goToGenres = function() {
+                    $state.go('main.genreStats', { graph: genreCounts })
                 }
 
-                console.log(vm.yearStats)
-
-                var yearCounts = _.chain(mergedCounts)
-                    .map(function(counts, year) {
-                        return {
-                            c: [
-                                { v: year },
-                                { v: counts.liked },
-                                { v: counts.disliked }
-                            ]
-                        }
-                    })
-                    // .orderBy(function(thing) {
-                    //     return thing.c[1].v
-                    // }, 'desc')
-                    .value()
-
-
-                vm.yearCounts = {};
-
-                vm.yearCounts.type = "BarChart";
-
-                vm.yearCounts.data = {
-                    "cols": [
-                        { id: "t", label: "Opinion", type: "string" },
-                        { id: "s", label: "Liked", type: "number" },
-                        { id: "s", label: "Disliked", type: "number" }
-                    ],
-                    "rows": yearCounts
-                };
-
-                vm.yearCounts.options = {
-                    'title': 'By Year',
-                    legend: { position: "none" },
-                    // pieSliceText: 'label'
-                    hAxis: {
-                        textPosition: 'none',
-                        gridlines: {
-                            count: 0
-                        }
-                    },
-                    isStacked: true
-                        // displayExactValues: true,
-                };
-
-
-
-                vm.myChartObject = {};
-
-                vm.myChartObject.type = "PieChart";
-
-                vm.myChartObject.data = {
-                    "cols": [
-                        { id: "t", label: "Opinion", type: "string" },
-                        { id: "s", label: "Count", type: "number" }
-                    ],
-                    "rows": [{
-                        c: [
-                            { v: "Liked" },
-                            { v: sortedMovies.liked.length },
-                        ]
-                    }, {
-                        c: [
-                            { v: "Disliked" },
-                            { v: sortedMovies.disliked.length }
-                        ]
-                    }, {
-                        c: [
-                            { v: "Unseen" },
-                            { v: sortedMovies.unseen.length },
-                        ]
-                    }]
-                };
-
-                // vm.myChartObject.options = {
-                //     'title': 'Breakdown'
-                // };
-
-                movieDatabase.get('genre/movie/list')
-                    .then(function(result) {
-                        console.log(result)
-                        var likedCounts = _.chain(sortedMovies.liked)
-                            .map('genre_ids')
-                            .flatten()
-                            .countBy()
-                            .mapValues(function(count) {
-                                return {
-                                    liked: count
-                                }
-                            })
-                            .value()
-                        var dislikedCounts = _.chain(sortedMovies.disliked)
-                            .map('genre_ids')
-                            .flatten()
-                            .countBy()
-                            .mapValues(function(count) {
-                                return {
-                                    disliked: count
-                                }
-                            })
-                            .value()
-
-                        console.log(dislikedCounts)
-
-                        var mergedCounts = _.chain(likedCounts)
-                            .mergeWith(dislikedCounts, function(likedObj, dislikedObj) {
-                                var likedCount = likedObj ? likedObj.liked || 0 : 0;
-                                var dislikedCount = dislikedObj ? dislikedObj.disliked || 0 : 0;
-
-                                return {
-                                    liked: likedCount,
-                                    disliked: dislikedCount
-                                }
-                            })
-                            .mapValues(function(obj) {
-                                return {
-                                    liked: obj.liked || 0,
-                                    disliked: obj.disliked || 0
-                                }
-                            })
-                            .value()
-
-                        var percentages = _.chain(mergedCounts)
-                            .map(function(obj, genreId) {
-                                return {
-                                    genre: _.find(result.genres, { id: Number(genreId) }).name,
-                                    percent: obj.liked / (obj.liked + obj.disliked),
-                                    total: obj.liked + obj.disliked
-                                }
-                            })
-                            .sortBy(['percent', 'total'])
-                            .value();
-
-                        console.log(percentages)
-
-                        vm.genreStats = {
-                            mostLiked: _.last(percentages).genre,
-                            mostDisliked: _.chain(percentages)
-                                .filter({ percent: percentages[0].percent })
-                                .maxBy('total')
-                                .value()
-                                .genre
-                        }
-
-                        var genreCounts = _.chain(mergedCounts)
-                            .map(function(count, genreId) {
-                                return {
-                                    c: [
-                                        { v: _.find(result.genres, { id: Number(genreId) }).name },
-                                        { v: count.liked },
-                                        { v: count.disliked }
-                                    ]
-                                }
-                            })
-                            .orderBy(function(thing) {
-                                return thing.c[1].v + thing.c[2].v;
-                            }, 'desc')
-                            .value()
-
-
-                        vm.favoriteGenres = {};
-
-                        vm.favoriteGenres.type = "BarChart";
-
-                        vm.favoriteGenres.data = {
-                            "cols": [
-                                { id: "t", label: "Opinion", type: "string" },
-                                { id: "s", label: "Liked", type: "number" },
-                                { id: "s", label: "Disliked", type: "number" }
-                            ],
-                            "rows": genreCounts
-                        };
-
-                        vm.favoriteGenres.options = {
-                            'title': 'Most Liked Genres',
-                            legend: { position: "none" },
-                            // pieSliceText: 'label'
-                            hAxis: {
-                                textPosition: 'none',
-                                gridlines: {
-                                    count: 0
-                                }
-                            },
-                            isStacked: true
-                                // displayExactValues: true,
-                        };
-
-                        vm.goToGenres = function() {
-                            $state.go('main.genreStats', { graph: vm.favoriteGenres })
-                        }
-
-                        vm.goToYears = function() {
-                            $state.go('main.genreStats', { graph: vm.yearCounts })
-                        }
-
-                        $ionicLoading.hide()
-
-                    })
-
+                $scope.goToYears = function() {
+                    $state.go('main.yearStats', { graph: yearCounts })
+                }
             })
+
+        function getStats(counts) {
+            var percentages = _.chain(counts)
+                .map(function(obj, attr) {
+                    return {
+                        attr: attr,
+                        percent: obj.liked / (obj.liked + obj.disliked),
+                        total: obj.liked + obj.disliked
+                    }
+                })
+                .reject({ total: 1 })
+                .sortBy(['percent', 'total'])
+                .value();
+
+            var stats = {
+                mostLiked: _.chain(percentages)
+                    .filter({ percent: _.last(percentages).percent })
+                    .maxBy('total')
+                    .value(),
+                mostDisliked: _.chain(percentages)
+                    .filter({ percent: percentages[0].percent })
+                    .maxBy('total')
+                    .value()
+            }
+
+            if (!stats.mostLiked || !stats.mostDisliked || stats.mostLiked.attr === stats.mostDisliked.attr) {
+                return {
+                    mostLiked: "Not Enough Data",
+                    mostDisliked: "Not Enough Data"
+                }
+            }
+
+            return {
+                mostLiked: stats.mostLiked.attr,
+                mostDisliked: stats.mostDisliked.attr
+            };
+        }
     })
