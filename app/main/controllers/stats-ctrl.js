@@ -90,6 +90,8 @@ angular.module('main')
                                 genreCounts[genre][opinion]++;
                             });
 
+                            console.log(initialDataLoaded)
+
                             if (initialDataLoaded) {
                                 $timeout(function() {
 
@@ -104,6 +106,20 @@ angular.module('main')
 
                 userReviewRef.once('value', function(snapshot) {
                     initialDataLoaded = true;
+
+                    console.log(snapshot)
+
+                    if (!snapshot.val()) {
+                        $scope.yearStats = {
+                            mostLiked: "Not Enough Data",
+                            mostDisliked: "Not Enough Data"
+                        };
+
+                        $scope.genreStats = {
+                            mostLiked: "Not Enough Data",
+                            mostDisliked: "Not Enough Data"
+                        }
+                    }
                 });
 
                 var actorReviewRef = firebase.database().ref('people-reviews/' + Auth.$getAuth().uid + '/actors');
@@ -206,6 +222,13 @@ angular.module('main')
                 .reject({ total: 1 })
                 .sortBy(['percent', 'total'])
                 .value();
+
+            if (!percentages.length) {
+                return {
+                    mostLiked: "Not Enough Data",
+                    mostDisliked: "Not Enough Data"
+                }
+            }
 
             var stats = {
                 mostLiked: _.chain(percentages)
