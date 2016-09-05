@@ -1,23 +1,16 @@
 'use strict';
 angular.module('main')
-    .controller('MoviesCtrl', function($scope, movieDatabase, Auth, $firebaseObject, $firebaseArray, $q, $timeout, $ionicLoading) {
-        var user;
+    .controller('MoviesCtrl', function($scope, movieDatabase, Auth, $firebaseObject, $firebaseArray, $q, $timeout, $ionicLoading, $rootScope) {
         var movieReviews;
-        var peopleReviews;
 
         var uid = Auth.$getAuth().uid;
 
-        $scope.deal = {};
+        $scope.imageUrl = $rootScope.configuration.images.base_url + 'w300';
 
-        movieDatabase.get('configuration')
-            .then(function(result) {
-                $scope.imageUrl = result.images.base_url + 'w300';
+        var ref = firebase.database().ref('people-reviews/' + uid);
+        var peopleReviews = $firebaseObject(ref);
 
-                var ref = firebase.database().ref('people-reviews/' + uid);
-                peopleReviews = $firebaseObject(ref);
-
-                return peopleReviews.$loaded();
-            })
+        peopleReviews.$loaded()
             .then(function() {
                 if (!peopleReviews.actors) {
                     peopleReviews.actors = {};
@@ -35,14 +28,13 @@ angular.module('main')
                 .then(function() {
                     return $q.all(getCardsToAdd(10));
                 })
-                .then(function(cards) {
+                .then(function(result) {
                     $ionicLoading.hide()
                         .then(function() {
-
-                            $scope.cards = _.map(cards, function(arr) {
+                            $scope.cards = _.map(result, function(movieCreditsArr) {
                                 return {
-                                    movie: arr[0],
-                                    people: arr[1]
+                                    movie: movieCreditsArr[0],
+                                    people: movieCreditsArr[1]
                                 };
                             });
                         });
@@ -57,7 +49,10 @@ angular.module('main')
                     return _.keys(review).length;
                 })
                 .map(function(review) {
-                    return $q.all([movieDatabase.get('movie/' + review.$id), movieDatabase.get('movie/' + review.$id + '/credits')]);
+                    var movie = movieDatabase.get('movie/' + review.$id);
+                    var credits = movieDatabase.get('movie/' + review.$id + '/credits');
+
+                    return $q.all([movie, credits]);
                 })
                 .value();
         }
@@ -80,38 +75,42 @@ angular.module('main')
             var movieReviewRef = firebase.database().ref('movie-reviews/' + card.movie.id + '/' + uid)
             var userReviewRef = firebase.database().ref('user-reviews/' + uid + '/' + card.movie.id);
 
-            movieReviewRef.set(opinion)
-            userReviewRef.set(opinion)
+            movieReviewRef.set(opinion);
+            userReviewRef.set(opinion);
 
             if (opinion !== 'unseen') {
-                angular.forEach(card.people.cast, function(person) {
-                    if (!peopleReviews.actors[person.id]) {
-                        peopleReviews.actors[person.id] = {
-                            liked: 0,
-                            disliked: 0
-                        }
-                    }
-
-                    peopleReviews.actors[person.id][opinion]++;
-                });
-
-                var directorIds = _.chain(card.people.crew)
-                    .filter({ department: 'Directing', job: 'Director' })
-                    .map('id')
-                    .value();
-
-                angular.forEach(directorIds, function(directorId) {
-                    if (!peopleReviews.directors[directorId]) {
-                        peopleReviews.directors[directorId] = {
-                            liked: 0,
-                            disliked: 0
-                        }
-                    }
-
-                    peopleReviews.directors[directorId][opinion]++;
-                });
-
-                peopleReviews.$save();
+                setPeopleOpinions(card, opinion);
             }
+        }
+
+        function setPeopleOpinions(card, opinion) {
+            angular.forEach(card.people.cast, function(person) {
+                if (!peopleReviews.actors[person.id]) {
+                    peopleReviews.actors[person.id] = {
+                        liked: 0,
+                        disliked: 0
+                    }
+                }
+
+                peopleReviews.actors[person.id][opinion]++;
+            });
+
+            var directorIds = _.chain(card.people.crew)
+                .filter({ department: 'Directing', job: 'Director' })
+                .map('id')
+                .value();
+
+            angular.forEach(directorIds, function(directorId) {
+                if (!peopleReviews.directors[directorId]) {
+                    peopleReviews.directors[directorId] = {
+                        liked: 0,
+                        disliked: 0
+                    }
+                }
+
+                peopleReviews.directors[directorId][opinion]++;
+            });
+
+            peopleReviews.$save();
         }
     });
